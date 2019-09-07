@@ -306,7 +306,7 @@ impl Renderable<PageNcchList> for PageNcchList {
                                 </thead>
                                 <tbody> {for ncchs.iter().map(|ncch|{
                                     let has_smdh = ncch.short_title.is_some();
-                                    let (title, publisher) = if (has_smdh) {
+                                    let (title, publisher, icon) = if (has_smdh) {
                                         let region = ncch.region_lockout.unwrap();
                                         let index = if (region & (1 << 1)) != 0 {
                                             1
@@ -319,16 +319,18 @@ impl Renderable<PageNcchList> for PageNcchList {
                                             }
                                         };
                                         (ncch.long_title.as_ref().unwrap()[index].as_str(),
-                                        ncch.publisher.as_ref().unwrap()[index].as_str())
+                                         ncch.publisher.as_ref().unwrap()[index].as_str(),
+                                         url::ncch_info(&ncch.id, "icon_small.png")
+                                        )
                                     } else {
-                                        ("", "")
+                                        ("", "", url::not_found_small().to_owned())
                                     };
 
                                     html!{<tr>
                                         <td><a href = format!("{}?{}", url::ncch(), ncch.id)>
                                             {"View"}
                                         </a></td>
-                                        <td><img src=url::ncch_info(&ncch.id, "icon_small.png")/></td>
+                                        <td><img src=icon/></td>
                                         <td class="is-family-monospace">{&ncch.partition_id}</td>
                                         <td class="is-family-monospace">{&ncch.program_id}</td>
                                         <td class="is-family-monospace">{&ncch.product_code}</td>

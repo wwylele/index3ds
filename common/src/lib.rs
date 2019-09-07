@@ -183,4 +183,12 @@ pub mod url {
         "/query_ncch_count"
     }
 
+    pub fn not_found_small() -> &'static str {
+        "/notfound24.png"
+    }
+
+    pub fn not_found_large() -> &'static str {
+        "/notfound48.png"
+    }
+
 }

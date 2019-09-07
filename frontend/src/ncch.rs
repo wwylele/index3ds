@@ -592,6 +592,18 @@ impl Renderable<PageNcch> for PageNcch {
             NcchInfoStatus::Error => html! {"Error"},
             NcchInfoStatus::Ready(ncch_info) => {
                 let unit_size = 0x200 * (1 << ncch_info.content_unit_size);
+                let (icon_large, icon_small) = if ncch_info.short_title.is_some() {
+                    (
+                        url::ncch_info(&self.props.ncch_id, "icon_large.png"),
+                        url::ncch_info(&self.props.ncch_id, "icon_small.png"),
+                    )
+                } else {
+                    (
+                        url::not_found_large().to_owned(),
+                        url::not_found_small().to_owned(),
+                    )
+                };
+
                 html! {
                     <div class="tile is-ancestor">
                         <div class="tile is-parent is-vertical">
@@ -600,11 +612,11 @@ impl Renderable<PageNcch> for PageNcch {
                                 <table class="table"><tbody>
                                     <tr>
                                         <td>{"Large"}</td>
-                                        <td><img src=url::ncch_info(&self.props.ncch_id, "icon_large.png")/></td>
+                                        <td><img src=icon_large/></td>
                                     </tr>
                                     <tr>
                                         <td>{"Small"}</td>
-                                        <td><img src=url::ncch_info(&self.props.ncch_id, "icon_small.png")/></td>
+                                        <td><img src=icon_small/></td>
                                     </tr>
                                 </tbody></table>
                             </div>
