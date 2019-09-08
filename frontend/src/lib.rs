@@ -1,6 +1,6 @@
 #![recursion_limit = "4096"]
 use index3ds_common::*;
-use stdweb::web::{*, event::PopStateEvent};
+use stdweb::web::{event::PopStateEvent, *};
 use yew::{html, Component, ComponentLink, Html, Renderable, ShouldRender};
 
 mod language_map;
@@ -27,7 +27,7 @@ impl Component for Model {
     type Properties = ();
 
     fn create(_: Self::Properties, mut link: ComponentLink<Self>) -> Self {
-        let pop_history = link.send_back(|_|Msg::PopHistory);
+        let pop_history = link.send_back(|_| Msg::PopHistory);
         let history_listener = window().add_event_listener(move |_: PopStateEvent| {
             pop_history.emit(());
         });
@@ -40,7 +40,7 @@ impl Component for Model {
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::ToggleBurger => self.burger_active = !self.burger_active,
-            Msg::PopHistory => ()
+            Msg::PopHistory => (),
         }
         true
     }

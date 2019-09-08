@@ -318,40 +318,90 @@ impl PageSubmitNcch {
 impl Renderable<PageSubmitNcch> for PageSubmitNcch {
     fn view(&self) -> Html<Self> {
         html! {
-            <div>
-                <label class="file-label">
-                    <input class="file-input" type="file" accept=".3ds,.app,.cxi,.cci"
-                        multiple=true onchange=|value| {
-                        let mut result = Vec::new();
-                        if let ChangeData::Files(files) = value {
-                            result.extend(files);
-                            Msg::Files(result)
-                        } else {
-                            Msg::None
-                        }
-                    }/>
-                    <span class="file-cta">
-                        <span class="file-icon">
-                            <i class="fas fa-upload"></i>
-                        </span>
-                        <span class="file-label">
-                            {"Choose files…"}
-                        </span>
-                    </span>
-                </label>
-                <table class="table is-striped is-narrow is-hoverable">
-                    <thead>
-                        <tr>
-                            <th>{"Status"}</th>
-                            <th>{"File Name"}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {for self.submits.iter().map(|e|{
-                            self.view_submit_entry(&e.borrow())
-                        })}
-                    </tbody>
-                </table>
+            <div class="tile is-ancestor">
+                <div class="tile is-vertical is-parent">
+                    <div class = "tile is-child">
+                        <div class="file is-boxed is-primary"><label class="file-label">
+                            <input class="file-input" type="file" accept=".3ds,.app,.cxi,.cci"
+                                multiple=true onchange=|value| {
+                                let mut result = Vec::new();
+                                if let ChangeData::Files(files) = value {
+                                    result.extend(files);
+                                    Msg::Files(result)
+                                } else {
+                                    Msg::None
+                                }
+                            }/>
+                            <span class="file-cta">
+                                <span class="file-icon">
+                                    <i class="fas fa-upload"></i>
+                                </span>
+                                <span class="file-label">
+                                    {"Choose files…"}
+                                </span>
+                            </span>
+                        </label></div>
+                        <table class="table is-striped is-narrow is-hoverable">
+                            <thead>
+                                <tr>
+                                    <th>{"Status"}</th>
+                                    <th>{"File Name"}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {for self.submits.iter().map(|e|{
+                                    self.view_submit_entry(&e.borrow())
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="tile is-vertical is-parent">
+                    <article class="tile is-child">
+                        <p class="title">{"Adding Game Entries"}</p>
+                        <div class="content">
+        {"Two file formats are currently supported: NCCH and NCSD. CIA format is not supported."}<br /><br />
+        {"NCCH (*.app, *.cxi) files are typically from digital games, system apps, update patches and DLCs.
+        Some common ways to dump them are"}
+        <ul>
+            <li>
+                {"Using"} <a href="https://github.com/d0k3/GodMode9">{"GodMode9"}</a>{": navigate to "}
+                <span class="is-family-monospace">{"SYSNAND CTRNAND/title"}</span>
+                {" (for system apps), or "}
+                <span class="is-family-monospace">{"SYSNAND SD/title"}</span>
+                {" (for digital games, updates and DLCs), and for all .app files in the sub folders,
+                press A and choose \"Copy t 0:/gm9/out\". Then you can upload these .app files in SD/gm9/out here."}
+            </li>
+            <li>
+                {"Decrypt SD/NAND files without 3DS: mount SD or NAND image on computer using tools such as "}
+                <a href="https://github.com/ihaveamac/ninfs">{"ninfs"}</a>
+                {" and upload .app files from the mounted file systems."}
+            </li>
+        </ul>
+        <br />
+        {"NCSD (*.3ds, *.cci) files are typically from game cartidges, which is a wrapper of multiple NCCH files.
+        You can get them simply by dumping the raw content of cartridges. In GodMode9, this is done by
+        navigating to "}
+        <span class="is-family-monospace">{"GAMECART/<some-id>.3ds"}</span>
+        {" and choosing \"Copy t 0:/gm9/out\". You can then upload the .3ds file in SD/gm9/out."}
+        <br /><br />
+        {"Index3ds only accepts games and contents signed by official, and will reject files that has a wrong
+            signature. This means that if the file has ever been modified, it will likely be rejected by index3ds
+        (if it is accepted, it means the modified part doesn't affect the information stored in the index3ds database)"}
+        <br /><br />
+        {"You could, but doesn't need to, decrypt the NCCH/NCSD file before uploading.
+        In fact, it is recommended not to decrypt the NCCH/NCSD file, because common decryption tools including
+        GodMode9
+        would modify the crypto flag upon decryption, and index3ds would need to work extra hard to restore the
+        original
+        flag in order to verify the content, which doesn't always work well. Note that this should not be confused
+        with
+        decrypting SD/NAND files mentioned above for NCCH, which is another crypto layer on top of the NCCH
+        encryption,
+        and which must be performed by users using GodMode9 or ninfs."}
+                        </div>
+                    </article>
+                </div>
             </div>
         }
     }
