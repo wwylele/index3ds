@@ -370,7 +370,7 @@ impl Renderable<PageSubmitNcch> for PageSubmitNcch {
                 {" (for system apps), or "}
                 <span class="is-family-monospace">{"SYSNAND SD/title"}</span>
                 {" (for digital games, updates and DLCs), and for all .app files in the sub folders,
-                press A and choose \"Copy t 0:/gm9/out\". Then you can upload these .app files in SD/gm9/out here."}
+                press A and choose \"Copy to 0:/gm9/out\". Then you can upload these .app files in SD/gm9/out here."}
             </li>
             <li>
                 {"Decrypt SD/NAND files without 3DS: mount SD or NAND image on computer using tools such as "}
@@ -383,7 +383,7 @@ impl Renderable<PageSubmitNcch> for PageSubmitNcch {
         You can get them simply by dumping the raw content of cartridges. In GodMode9, this is done by
         navigating to "}
         <span class="is-family-monospace">{"GAMECART/<some-id>.3ds"}</span>
-        {" and choosing \"Copy t 0:/gm9/out\". You can then upload the .3ds file in SD/gm9/out."}
+        {" and choosing \"Copy to 0:/gm9/out\". You can then upload the .3ds file in SD/gm9/out."}
         <br /><br />
         {"Index3ds only accepts games and contents signed by official, and will reject files that has a wrong
             signature. This means that if the file has ever been modified, it will likely be rejected by index3ds
