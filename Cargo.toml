@@ -3,4 +3,5 @@ members = [
   "backend",
   "frontend",
   "common",
+  "httpstub",
 ]
