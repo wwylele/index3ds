@@ -22,8 +22,10 @@ use lazy_static::*;
 use log::{error, info, warn};
 use rand::prelude::*;
 use rsa2048::*;
+use rustls::*;
 use sha2::*;
 use std::collections::HashMap;
+use std::io::Read;
 use std::mem::drop;
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread::{sleep, spawn};
@@ -597,7 +599,7 @@ fn main() -> std::io::Result<()> {
         cleanup_session();
     });
 
-    HttpServer::new(move || {
+    let mut server = HttpServer::new(move || {
         let session_map = session_map_root.clone();
         let database = database_root.clone();
 
@@ -754,7 +756,25 @@ fn main() -> std::io::Result<()> {
             .route(url::submit_ncch(), index())
             .route(url::ncch_list(), index())
             .service(actix_files::Files::new("/", &*STATIC_ROOT))
-    })
-    .bind(std::env::var("BIND_POINT").expect("BIND_POINT"))?
-    .run()
+    });
+
+    let addr = std::env::var("BIND_POINT").expect("BIND_POINT");
+
+    if std::env::var("HTTPS").ok().as_ref().map(|x| x.as_str()) == Some("1") {
+        let mut cert = vec![];
+        let mut key = vec![];
+        std::fs::File::open(std::env::var("CERTIFICATE").expect("CERTIFICATE"))?
+            .read_to_end(&mut cert)?;
+        std::fs::File::open(std::env::var("PRIVATE_KEY").expect("PRIVATE_KEY"))?
+            .read_to_end(&mut key)?;
+        let cert = rustls::internal::pemfile::certs(&mut &cert[..]).unwrap();
+        let key = rustls::internal::pemfile::pkcs8_private_keys(&mut &key[..]).unwrap().remove(0);
+        let mut config = ServerConfig::new(NoClientAuth::new());
+        config.set_single_cert(cert, key).unwrap();
+        server = server.bind_rustls(addr, config)?;
+    } else {
+        server = server.bind(addr)?;
+    }
+
+    server.run()
 }
