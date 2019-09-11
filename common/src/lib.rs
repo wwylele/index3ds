@@ -112,9 +112,111 @@ pub enum PostNcchResponse {
     NotFound,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum Comparator {
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+}
+
+// Workaround for encoding non-string in urlencoded because of bugs:
+// https://github.com/nox/serde_urlencoded/issues/33
+// https://github.com/serde-rs/serde/issues/1183
+// https://github.com/rust-lang/rust/issues/29661
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[serde(transparent)]
+pub struct StringWrapper<T>(String, std::marker::PhantomData<T>);
+
+impl<T: std::string::ToString + std::str::FromStr> StringWrapper<T> {
+    pub fn new(value: T) -> StringWrapper<T> {
+        StringWrapper(value.to_string(), std::marker::PhantomData)
+    }
+
+    pub fn value(&self) -> Option<T> {
+        str::parse::<T>(&self.0).ok()
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 pub struct NcchFilterParam {
     pub keyword: Option<String>,
+
+    pub content_size_cmp: Option<Comparator>,
+    pub content_size_rhs: Option<StringWrapper<u32>>,
+    pub partition_id: Option<String>,
+    pub partition_id_mask: Option<String>,
+    pub maker_code: Option<String>,
+    pub ncch_version_cmp: Option<Comparator>,
+    pub ncch_version_rhs: Option<StringWrapper<u16>>,
+    pub program_id: Option<String>,
+    pub program_id_mask: Option<String>,
+    pub product_code: Option<String>,
+    pub secondary_key_slot_cmp: Option<Comparator>,
+    pub secondary_key_slot_rhs: Option<StringWrapper<u8>>,
+    pub platform: Option<u8>,
+    pub content_is_data: Option<StringWrapper<bool>>,
+    pub content_is_executable: Option<StringWrapper<bool>>,
+    pub content_category_cmp: Option<Comparator>,
+    pub content_category_rhs: Option<StringWrapper<u8>>,
+    pub content_unit_size_cmp: Option<Comparator>,
+    pub content_unit_size_rhs: Option<StringWrapper<u8>>,
+    pub fixed_key: Option<StringWrapper<bool>>,
+    pub no_romfs: Option<StringWrapper<bool>>,
+    pub no_crypto: Option<StringWrapper<bool>>,
+    pub seed_crypto: Option<StringWrapper<bool>>,
+
+    pub exheader_name: Option<String>,
+    pub sd_app: Option<StringWrapper<bool>>,
+    // remaster_version?
+    // dependencies?
+    // save_data_size?
+    pub save_data_size_cmp: Option<Comparator>,
+    pub save_data_size_rhs: Option<StringWrapper<u64>>,
+    pub jump_id: Option<String>,
+    pub jump_id_mask: Option<String>,
+    pub exheader_program_id: Option<String>,
+    pub exheader_program_id_mask: Option<String>,
+    pub core_version_cmp: Option<Comparator>,
+    pub core_version_rhs: Option<StringWrapper<u32>>,
+    pub enable_l2_cache: Option<StringWrapper<bool>>,
+    pub high_cpu_speed: Option<StringWrapper<bool>>,
+    pub system_mode_cmp: Option<Comparator>,
+    pub system_mode_rhs: Option<StringWrapper<u8>>,
+    pub n3ds_system_mode_cmp: Option<Comparator>,
+    pub n3ds_system_mode_rhs: Option<StringWrapper<u8>>,
+    pub ideal_processor_cmp: Option<Comparator>,
+    pub ideal_processor_rhs: Option<StringWrapper<u8>>,
+    pub affinity_mask_cmp: Option<Comparator>,
+    pub affinity_mask_rhs: Option<StringWrapper<u8>>,
+    pub thread_priority_cmp: Option<Comparator>,
+    pub thread_priority_rhs: Option<StringWrapper<u8>>,
+    // resource_limit_desc?
+    // pub extdata_id: Option<String>,
+    // pub system_savedata_id0: Option<String>,
+    // pub system_savedata_id1: Option<String>,
+    // pub storage_access_id: Option<String>,
+    pub filesystem_flag: Option<StringWrapper<u64>>,
+    pub filesystem_flag_mask: Option<StringWrapper<u64>>,
+    // pub services: Option<Vec<String>>,
+    pub resource_limit_category_cmp: Option<Comparator>,
+    pub resource_limit_category_rhs: Option<StringWrapper<u8>>,
+    // pub kernel_desc: Option<Vec<u32>>,
+    pub arm9_flag: Option<StringWrapper<u32>>,
+    pub arm9_flag_mask: Option<StringWrapper<u32>>,
+    pub arm9_flag_version: Option<StringWrapper<u8>>,
+
+    pub region_lockout: Option<StringWrapper<u32>>,
+    pub region_lockout_mask: Option<StringWrapper<u32>>,
+    pub match_maker_id: Option<String>,
+    pub match_maker_bit_id: Option<String>,
+    pub smdh_flag: Option<StringWrapper<u32>>,
+    pub smdh_flag_mask: Option<StringWrapper<u32>>,
+    pub eula_version_cmp: Option<Comparator>,
+    pub eula_version_rhs: Option<StringWrapper<u16>>,
+    pub cec_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

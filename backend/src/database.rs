@@ -81,7 +81,7 @@ fn trim<'a, U, T: PartialEq<U>>(to_trim: &U, mut s: &'a [T]) -> &'a [T] {
     s
 }
 
-fn normalize(text: &String) -> String {
+fn normalize(text: &str) -> String {
     text.chars()
         .map(|c| {
             let c = c.to_ascii_lowercase();
@@ -395,6 +395,126 @@ pub enum DatabaseError {
     Other,
 }
 
+trait DatabaseTypeAdaptor {
+    type DatabaseType;
+    fn cast(self) -> Self::DatabaseType;
+}
+
+impl DatabaseTypeAdaptor for u8 {
+    type DatabaseType = i16;
+    fn cast(self) -> Self::DatabaseType {
+        self as i16
+    }
+}
+
+impl DatabaseTypeAdaptor for u16 {
+    type DatabaseType = i16;
+    fn cast(self) -> Self::DatabaseType {
+        self as i16
+    }
+}
+
+impl DatabaseTypeAdaptor for u32 {
+    type DatabaseType = i32;
+    fn cast(self) -> Self::DatabaseType {
+        self as i32
+    }
+}
+
+impl DatabaseTypeAdaptor for bool {
+    type DatabaseType = bool;
+    fn cast(self) -> Self::DatabaseType {
+        self
+    }
+}
+
+fn filter_comparator<'a, T, U>(
+    statement: ncch::BoxedQuery<'a, diesel::pg::Pg>,
+    comparator: &Option<Comparator>,
+    rhs: &Option<StringWrapper<T>>,
+    field: U,
+) -> Result<ncch::BoxedQuery<'a, diesel::pg::Pg>, DatabaseError>
+where
+    T: DatabaseTypeAdaptor + std::string::ToString + std::str::FromStr,
+    U: 'a
+        + diesel::expression_methods::ExpressionMethods
+        + diesel::AppearsOnTable<ncch::table>
+        + diesel::expression::NonAggregate
+        + diesel::query_builder::QueryFragment<diesel::pg::Pg>,
+    T::DatabaseType: diesel::expression::AsExpression<U::SqlType>,
+    <T::DatabaseType as diesel::expression::AsExpression<U::SqlType>>::Expression:
+        'a
+            + diesel::AppearsOnTable<ncch::table>
+            + diesel::expression::NonAggregate
+            + diesel::query_builder::QueryFragment<diesel::pg::Pg>,
+{
+    if let Some(cmp) = comparator {
+        let rhs = rhs
+            .as_ref()
+            .and_then(|v| v.value())
+            .ok_or(DatabaseError::InvalidParam)?
+            .cast();
+        Ok(match cmp {
+            Comparator::Eq => statement.filter(field.eq(rhs)),
+            Comparator::Ne => statement.filter(field.ne(rhs)),
+            Comparator::Lt => statement.filter(field.lt(rhs)),
+            Comparator::Le => statement.filter(field.le(rhs)),
+            Comparator::Gt => statement.filter(field.gt(rhs)),
+            Comparator::Ge => statement.filter(field.ge(rhs)),
+        })
+    } else {
+        Ok(statement)
+    }
+}
+
+fn filter_eq<'a, T, U>(
+    statement: ncch::BoxedQuery<'a, diesel::pg::Pg>,
+    rhs: &Option<StringWrapper<T>>,
+    field: U,
+) -> Result<ncch::BoxedQuery<'a, diesel::pg::Pg>, DatabaseError>
+where
+    T: DatabaseTypeAdaptor + std::string::ToString + std::str::FromStr,
+    U: 'a
+        + diesel::expression_methods::ExpressionMethods
+        + diesel::AppearsOnTable<ncch::table>
+        + diesel::expression::NonAggregate
+        + diesel::query_builder::QueryFragment<diesel::pg::Pg>,
+    T::DatabaseType: diesel::expression::AsExpression<U::SqlType>,
+    <T::DatabaseType as diesel::expression::AsExpression<U::SqlType>>::Expression:
+        'a
+            + diesel::AppearsOnTable<ncch::table>
+            + diesel::expression::NonAggregate
+            + diesel::query_builder::QueryFragment<diesel::pg::Pg>,
+{
+    if let Some(rhs) = rhs {
+        let rhs = rhs.value().ok_or(DatabaseError::InvalidParam)?.cast();
+        Ok(statement.filter(field.eq(rhs)))
+    } else {
+        Ok(statement)
+    }
+}
+
+fn filter_id<'a, U: diesel::query_source::Column>(
+    statement: ncch::BoxedQuery<'a, diesel::pg::Pg>,
+    id: &Option<String>,
+    mask: &Option<String>,
+    _: U,
+) -> Result<ncch::BoxedQuery<'a, diesel::pg::Pg>, DatabaseError> {
+    if let Some(id) = id {
+        let id = u64::from_str_radix(&id, 16).map_err(|_| DatabaseError::InvalidParam)? as i64;
+        let mask = mask.as_ref().ok_or(DatabaseError::InvalidParam)?;
+        let mask = u64::from_str_radix(&mask, 16).map_err(|_| DatabaseError::InvalidParam)? as i64;
+        Ok(statement.filter(diesel::dsl::sql(&format!(
+            "{} & {} = {}",
+            U::NAME,
+            mask,
+            id
+        ))))
+    } else {
+        Ok(statement)
+    }
+}
+
 fn filter_ncch(
     param: &NcchFilterParam,
 ) -> Result<ncch::BoxedQuery<'_, diesel::pg::Pg>, DatabaseError> {
@@ -409,6 +529,32 @@ fn filter_ncch(
         );
         statement = statement.filter(ncch::keyword.like(keyword_matcher).escape('\\'));
     }
+
+    statement = filter_comparator(
+        statement,
+        &param.content_size_cmp,
+        &param.content_size_rhs,
+        ncch::content_size,
+    )?;
+
+    statement = filter_id(
+        statement,
+        &param.partition_id,
+        &param.partition_id_mask,
+        ncch::partition_id,
+    )?;
+
+    if let Some(maker_code) = &param.maker_code {
+        if maker_code.len() != 2 {
+            return Err(DatabaseError::InvalidParam);
+        }
+        let maker_code =
+            (maker_code.as_bytes()[0] as u16 + ((maker_code.as_bytes()[1] as u16) << 8)) as i16;
+        statement = statement.filter(ncch::maker_code.eq(maker_code))
+    }
+
+    statement = filter_eq(statement, &param.no_romfs, ncch::no_romfs)?;
+
     Ok(statement)
 }
 
