@@ -365,7 +365,7 @@ impl Renderable<PageSubmitNcch> for PageSubmitNcch {
         Some common ways to dump them are"}
         <ul>
             <li>
-                {"Using"} <a href="https://github.com/d0k3/GodMode9">{"GodMode9"}</a>{": navigate to "}
+                {"Using "} <a href="https://github.com/d0k3/GodMode9">{"GodMode9"}</a>{": navigate to "}
                 <span class="is-family-monospace">{"SYSNAND CTRNAND/title"}</span>
                 {" (for system apps), or "}
                 <span class="is-family-monospace">{"SYSNAND SD/title"}</span>
