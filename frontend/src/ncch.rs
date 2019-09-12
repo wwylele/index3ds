@@ -630,7 +630,7 @@ impl Renderable<PageNcch> for PageNcch {
                                     {PageNcch::field("Maker Code", &ncch_info.maker_code)}
                                     {PageNcch::field("Content Type", PageNcch::content_type_info(&ncch_info))}
                                     {PageNcch::field("Content Size", &format_content_size(ncch_info.content_size as u64 * unit_size))}
-                                    {PageNcch::field("NCCH Version", &format!("{}", ncch_info.ncch_verson))}
+                                    {PageNcch::field("NCCH Version", &format!("{}", ncch_info.ncch_version))}
                                     {PageNcch::field("Crypto Type", PageNcch::crypto_info(&ncch_info))}
                                     {PageNcch::field("Platform", &format_platform(ncch_info.platform))}
                                 </tbody></table>

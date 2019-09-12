@@ -277,7 +277,7 @@ impl NcchRecord {
             content_size: self.content_size as u32,
             partition_id: format!("{:016x}", self.partition_id as u64),
             maker_code,
-            ncch_verson: self.ncch_verson as u16,
+            ncch_version: self.ncch_verson as u16,
             program_id: format!("{:016x}", self.program_id as u64),
             product_code: convert_string(&self.product_code),
             secondary_key_slot: self.secondary_key_slot as u8,
@@ -421,6 +421,13 @@ impl DatabaseTypeAdaptor for u32 {
     }
 }
 
+impl DatabaseTypeAdaptor for u64 {
+    type DatabaseType = i64;
+    fn cast(self) -> Self::DatabaseType {
+        self as i64
+    }
+}
+
 impl DatabaseTypeAdaptor for bool {
     type DatabaseType = bool;
     fn cast(self) -> Self::DatabaseType {
@@ -505,10 +512,39 @@ fn filter_id<'a, U: diesel::query_source::Column>(
         let mask = mask.as_ref().ok_or(DatabaseError::InvalidParam)?;
         let mask = u64::from_str_radix(&mask, 16).map_err(|_| DatabaseError::InvalidParam)? as i64;
         Ok(statement.filter(diesel::dsl::sql(&format!(
-            "{} & {} = {}",
+            "{} IS NOT NULL AND {} & {} = {}",
+            U::NAME,
             U::NAME,
             mask,
             id
+        ))))
+    } else {
+        Ok(statement)
+    }
+}
+
+fn filter_flag<'a, T, U>(
+    statement: ncch::BoxedQuery<'a, diesel::pg::Pg>,
+    flag: &Option<StringWrapper<T>>,
+    mask: &Option<StringWrapper<T>>,
+    _: U,
+) -> Result<ncch::BoxedQuery<'a, diesel::pg::Pg>, DatabaseError>
+where
+    U: diesel::query_source::Column,
+    T: DatabaseTypeAdaptor + std::string::ToString + std::str::FromStr,
+    T::DatabaseType: std::fmt::Display,
+{
+    if let Some(flag) = flag {
+        //let id = u64::from_str_radix(&id, 16).map_err(|_| DatabaseError::InvalidParam)? as i64;
+        let flag = flag.value().ok_or(DatabaseError::InvalidParam)?.cast();
+        let mask = mask.as_ref().ok_or(DatabaseError::InvalidParam)?;
+        let mask = mask.value().ok_or(DatabaseError::InvalidParam)?.cast();
+        Ok(statement.filter(diesel::dsl::sql(&format!(
+            "{} IS NOT NULL AND {} & {} = {}",
+            U::NAME,
+            U::NAME,
+            mask,
+            flag
         ))))
     } else {
         Ok(statement)
@@ -550,10 +586,219 @@ fn filter_ncch(
         }
         let maker_code =
             (maker_code.as_bytes()[0] as u16 + ((maker_code.as_bytes()[1] as u16) << 8)) as i16;
-        statement = statement.filter(ncch::maker_code.eq(maker_code))
+        statement = statement.filter(ncch::maker_code.eq(maker_code));
     }
 
+    statement = filter_comparator(
+        statement,
+        &param.ncch_version_cmp,
+        &param.ncch_version_rhs,
+        ncch::ncch_verson,
+    )?;
+
+    statement = filter_id(
+        statement,
+        &param.program_id,
+        &param.program_id_mask,
+        ncch::program_id,
+    )?;
+
+    if let Some(product_code) = &param.product_code {
+        if product_code.len() > 16 {
+            return Err(DatabaseError::InvalidParam);
+        }
+        let mut product_code = product_code.as_bytes().to_vec();
+        while product_code.len() < 16 {
+            product_code.push(0);
+        }
+        statement = statement.filter(ncch::product_code.eq(product_code));
+    }
+
+    statement = filter_comparator(
+        statement,
+        &param.secondary_key_slot_cmp,
+        &param.secondary_key_slot_rhs,
+        ncch::secondary_key_slot,
+    )?;
+
+    statement = filter_eq(statement, &param.platform, ncch::platform)?;
+
+    statement = filter_eq(statement, &param.content_is_data, ncch::content_is_data)?;
+
+    statement = filter_eq(
+        statement,
+        &param.content_is_executable,
+        ncch::content_is_executable,
+    )?;
+
+    statement = filter_comparator(
+        statement,
+        &param.content_category_cmp,
+        &param.content_category_rhs,
+        ncch::content_category,
+    )?;
+
+    statement = filter_comparator(
+        statement,
+        &param.content_unit_size_cmp,
+        &param.content_unit_size_rhs,
+        ncch::content_unit_size,
+    )?;
+
+    statement = filter_eq(statement, &param.fixed_key, ncch::fixed_key)?;
+
     statement = filter_eq(statement, &param.no_romfs, ncch::no_romfs)?;
+
+    statement = filter_eq(statement, &param.no_crypto, ncch::no_crypto)?;
+
+    statement = filter_eq(statement, &param.seed_crypto, ncch::seed_crypto)?;
+
+    if let Some(exheader_name) = &param.exheader_name {
+        if exheader_name.len() > 8 {
+            return Err(DatabaseError::InvalidParam);
+        }
+        let mut exheader_name = exheader_name.as_bytes().to_vec();
+        while exheader_name.len() < 8 {
+            exheader_name.push(0);
+        }
+        statement = statement.filter(ncch::exheader_name.eq(exheader_name));
+    }
+
+    statement = filter_eq(statement, &param.sd_app, ncch::sd_app)?;
+
+    statement = filter_comparator(
+        statement,
+        &param.save_data_size_cmp,
+        &param.save_data_size_rhs,
+        ncch::save_data_size,
+    )?;
+
+    statement = filter_id(
+        statement,
+        &param.jump_id,
+        &param.jump_id_mask,
+        ncch::jump_id,
+    )?;
+
+    statement = filter_id(
+        statement,
+        &param.exheader_program_id,
+        &param.exheader_program_id_mask,
+        ncch::exheader_program_id,
+    )?;
+
+    statement = filter_comparator(
+        statement,
+        &param.core_version_cmp,
+        &param.core_version_rhs,
+        ncch::core_version,
+    )?;
+
+    statement = filter_eq(statement, &param.enable_l2_cache, ncch::enable_l2_cache)?;
+
+    statement = filter_eq(statement, &param.high_cpu_speed, ncch::high_cpu_speed)?;
+
+    statement = filter_comparator(
+        statement,
+        &param.system_mode_cmp,
+        &param.system_mode_rhs,
+        ncch::system_mode,
+    )?;
+
+    statement = filter_comparator(
+        statement,
+        &param.n3ds_system_mode_cmp,
+        &param.n3ds_system_mode_rhs,
+        ncch::n3ds_system_mode,
+    )?;
+
+    statement = filter_comparator(
+        statement,
+        &param.ideal_processor_cmp,
+        &param.ideal_processor_rhs,
+        ncch::ideal_processor,
+    )?;
+
+    statement = filter_comparator(
+        statement,
+        &param.affinity_mask_cmp,
+        &param.affinity_mask_rhs,
+        ncch::affinity_mask,
+    )?;
+
+    statement = filter_comparator(
+        statement,
+        &param.thread_priority_cmp,
+        &param.thread_priority_rhs,
+        ncch::thread_priority,
+    )?;
+
+    statement = filter_flag(
+        statement,
+        &param.filesystem_flag,
+        &param.filesystem_flag_mask,
+        ncch::filesystem_flag,
+    )?;
+
+    statement = filter_comparator(
+        statement,
+        &param.resource_limit_category_cmp,
+        &param.resource_limit_category_rhs,
+        ncch::resource_limit_category,
+    )?;
+
+    statement = filter_flag(
+        statement,
+        &param.arm9_flag,
+        &param.arm9_flag_mask,
+        ncch::arm9_flag,
+    )?;
+
+    statement = filter_comparator(
+        statement,
+        &param.arm9_flag_version_cmp,
+        &param.arm9_flag_version_rhs,
+        ncch::arm9_flag_version,
+    )?;
+
+    statement = filter_flag(
+        statement,
+        &param.region_lockout,
+        &param.region_lockout_mask,
+        ncch::region_lockout,
+    )?;
+
+    if let Some(match_maker_id) = &param.match_maker_id {
+        let match_maker_id = u32::from_str_radix(&match_maker_id, 16)
+            .map_err(|_| DatabaseError::InvalidParam)? as i32;
+        statement = statement.filter(ncch::match_maker_id.eq(match_maker_id));
+    }
+
+    if let Some(match_maker_bit_id) = &param.match_maker_bit_id {
+        let match_maker_bit_id = u64::from_str_radix(&match_maker_bit_id, 16)
+            .map_err(|_| DatabaseError::InvalidParam)? as i64;
+        statement = statement.filter(ncch::match_maker_bit_id.eq(match_maker_bit_id));
+    }
+
+    statement = filter_flag(
+        statement,
+        &param.smdh_flag,
+        &param.smdh_flag_mask,
+        ncch::smdh_flags,
+    )?;
+
+    statement = filter_comparator(
+        statement,
+        &param.eula_version_cmp,
+        &param.eula_version_rhs,
+        ncch::eula_version,
+    )?;
+
+    if let Some(cec_id) = &param.cec_id {
+        let cec_id =
+            u32::from_str_radix(&cec_id, 16).map_err(|_| DatabaseError::InvalidParam)? as i32;
+        statement = statement.filter(ncch::cec_id.eq(cec_id));
+    }
 
     Ok(statement)
 }
