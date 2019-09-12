@@ -1,11 +1,13 @@
 #!/bin/bash -ex
 
 mkdir deploy
-mv target/release/index3ds deploy
-mv target/release/httpstub deploy
-mv target/deploy deploy/static
+cd deploy
+git rev-parse HEAD > ./git-version
+mv target/release/index3ds ./
+mv target/release/httpstub ./
+mv target/deploy ./static
 
-tar -cvzf deploy.tar.gz deploy
+tar -cvzf deploy.tar.gz .
 
 openssl aes-256-cbc -K $encrypted_e850a6789831_key -iv $encrypted_e850a6789831_iv -in index3ds-deploy-key.enc -out index3ds-deploy-key -d
 chmod 600 index3ds-deploy-key
