@@ -9,6 +9,11 @@ install:
 script:
   - cargo build -p index3ds -p httpstub --release -v
   - cargo web deploy -p index3ds-frontend --release -v
+deploy:
+  provider: script
+  script: bash .travis/deploy.sh
+  on:
+    branch: master
 
 env:
   global:
