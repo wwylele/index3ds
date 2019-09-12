@@ -13,4 +13,4 @@ chmod 600 index3ds-deploy-key
 eval "$(ssh-agent -s)"
 ssh-add index3ds-deploy-key
 scp -o "StrictHostKeyChecking no" deploy.tar.gz ubuntu@index3ds.com:/home/ubuntu/index3ds
-ssh -o "StrictHostKeyChecking no" ubuntu@index3ds.com '/home/ubuntu/index3ds/after-deploy.sh'
+ssh -o "StrictHostKeyChecking no" ubuntu@index3ds.com 'sudo /home/ubuntu/index3ds/after-deploy.sh'
