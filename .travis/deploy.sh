@@ -5,10 +5,10 @@ eval "$(ssh-agent -s)"
 ssh-add index3ds-deploy-key
 
 mkdir deploy
-git rev-parse HEAD > deploy/git-version
 mv target/release/index3ds deploy
 mv target/release/httpstub deploy
 mv target/deploy deploy/static
+git rev-parse HEAD > deploy/static/git-revision
 
 tar -cvzf deploy.tar.gz deploy
 chmod 666 deploy.tar.gz
