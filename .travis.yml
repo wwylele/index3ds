@@ -7,8 +7,8 @@ rust:
 install:
   - cargo install cargo-web || true
 script:
-  - cargo build -p index3ds -p httpstub --release -v
-  - cargo web deploy -p index3ds-frontend --release -v
+  - cargo build -p index3ds -p httpstub --release
+  - cargo web deploy -p index3ds-frontend --release
 deploy:
   skip_cleanup: true
   provider: script

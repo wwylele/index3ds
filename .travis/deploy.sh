@@ -13,6 +13,7 @@ mv ../target/deploy ./static
 
 tar -cvzf ../deploy.tar.gz .
 cd ..
+chmod 666 deploy.tar.gz
 
 scp -o "StrictHostKeyChecking no" deploy.tar.gz ubuntu@index3ds.com:/home/ubuntu/index3ds
 ssh -o "StrictHostKeyChecking no" ubuntu@index3ds.com 'sudo /home/ubuntu/index3ds/after-deploy.sh'
