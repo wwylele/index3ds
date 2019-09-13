@@ -694,7 +694,7 @@ fn main() -> std::io::Result<()> {
 
         let database = database_root.clone();
         let query_ncch = move |param: web::Query<NcchQueryParam>| {
-            info!("NCCH query called: {:?}", param);
+            info!("NCCH query called");
             let connection = match database.get_connection() {
                 Ok(connection) => connection,
                 Err(e) => {
