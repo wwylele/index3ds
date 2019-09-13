@@ -122,6 +122,22 @@ pub enum Comparator {
     Ge,
 }
 
+impl std::fmt::Display for Comparator {
+    fn fmt(
+        &self,
+        formatter: &mut std::fmt::Formatter<'_>,
+    ) -> std::result::Result<(), std::fmt::Error> {
+        match self {
+            Comparator::Eq => "=".fmt(formatter),
+            Comparator::Ne => "≠".fmt(formatter),
+            Comparator::Lt => "<".fmt(formatter),
+            Comparator::Le => "≤".fmt(formatter),
+            Comparator::Gt => ">".fmt(formatter),
+            Comparator::Ge => "≥".fmt(formatter),
+        }
+    }
+}
+
 // Workaround for encoding non-string in urlencoded because of bugs:
 // https://github.com/nox/serde_urlencoded/issues/33
 // https://github.com/serde-rs/serde/issues/1183
