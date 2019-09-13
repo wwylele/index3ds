@@ -11,7 +11,8 @@ mv ../target/release/index3ds ./
 mv ../target/release/httpstub ./
 mv ../target/deploy ./static
 
-tar -cvzf deploy.tar.gz .
+tar -cvzf ../deploy.tar.gz .
+cd ..
 
 scp -o "StrictHostKeyChecking no" deploy.tar.gz ubuntu@index3ds.com:/home/ubuntu/index3ds
 ssh -o "StrictHostKeyChecking no" ubuntu@index3ds.com 'sudo /home/ubuntu/index3ds/after-deploy.sh'
