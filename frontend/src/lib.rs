@@ -72,7 +72,7 @@ impl Model {
                 }
             } else if pathname == url::ncch_list() {
                 let search = if search.is_empty() {
-                    &search
+                    "content_is_executable=true"
                 } else {
                     &search[1..]
                 };

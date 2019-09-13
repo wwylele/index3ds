@@ -28,6 +28,22 @@ pub struct PageNcchList {
     search_string: String,
 }
 
+#[derive(Clone, Copy)]
+pub enum FilterField {
+    ProductCode,
+    MakerCode,
+    IsData,
+    IsExecutable,
+    ContentSize,
+}
+
+#[derive(Clone)]
+pub enum FilterChange {
+    Delete,
+    Bool(bool),
+}
+
+#[derive(Clone)]
 pub enum Msg {
     PageChanged(u32),
     CountReceived(u32),
@@ -35,6 +51,9 @@ pub enum Msg {
     NcchError,
     UpdateSearchBox(String),
     Search,
+
+    FilterUpdate(FilterField, FilterChange),
+
     None,
 }
 
@@ -150,6 +169,13 @@ impl Component for PageNcchList {
                 self.refresh_page_selector();
                 self.push_history();
             }
+            Msg::FilterUpdate(field, change) => {
+                self.apply_filter_change(&field, &change);
+                self.current_page = 0;
+                self.refresh_table();
+                self.refresh_page_selector();
+                self.push_history();
+            }
             Msg::None => {}
         }
         true
@@ -169,6 +195,42 @@ impl Component for PageNcchList {
 }
 
 impl PageNcchList {
+    #[allow(unreachable_patterns, clippy::single_match)]
+    fn apply_filter_change(&mut self, field: &FilterField, change: &FilterChange) {
+        let filter = &mut self.filter_param;
+        match field {
+            FilterField::MakerCode => match change {
+                FilterChange::Delete => filter.maker_code = None,
+                _ => (),
+            },
+            FilterField::ProductCode => match change {
+                FilterChange::Delete => filter.product_code = None,
+                _ => (),
+            },
+            FilterField::IsData => match change {
+                FilterChange::Delete => filter.content_is_data = None,
+                FilterChange::Bool(value) => {
+                    filter.content_is_data = Some(StringWrapper::new(*value))
+                }
+                _ => (),
+            },
+            FilterField::IsExecutable => match change {
+                FilterChange::Delete => filter.content_is_executable = None,
+                FilterChange::Bool(value) => {
+                    filter.content_is_executable = Some(StringWrapper::new(*value))
+                }
+                _ => (),
+            },
+            FilterField::ContentSize => match change {
+                FilterChange::Delete => {
+                    filter.content_size_cmp = None;
+                    filter.content_category_rhs = None
+                }
+                _ => (),
+            },
+        }
+    }
+
     fn push_history(&self) {
         let props = PageNcchListProp {
             current_page: self.current_page,
@@ -248,6 +310,112 @@ impl PageNcchList {
             </div>
         }
     }
+
+    fn filter_tag(&self, field: &str, value: &str, deleter_field: FilterField) -> Html<Self> {
+        html! {
+            <div class="control">
+                <div class="tags has-addons">
+                    <span class="tag is-info">{field}</span>
+                    <span class="tag is-family-monospace">{value}</span>
+                    <a class="tag is-delete"
+                        onclick=|_|Msg::FilterUpdate(deleter_field, FilterChange::Delete)></a>
+                </div>
+            </div>
+        }
+    }
+
+    fn filter_tags(&self) -> Html<Self> {
+        let filter = &self.filter_param;
+        let mut tags = Vec::new();
+
+        // partition id
+        // program id
+
+        if let Some(code) = &filter.product_code {
+            tags.push(self.filter_tag("Product Code", &code, FilterField::ProductCode));
+        }
+
+        if let Some(code) = &filter.maker_code {
+            tags.push(self.filter_tag("Makder Code", &code, FilterField::MakerCode));
+        }
+
+        // content type
+
+        if let Some(flag) = &filter.content_is_data {
+            tags.push(self.filter_tag(
+                "Data",
+                &format!("{}", flag.value().unwrap_or(false)),
+                FilterField::IsData,
+            ));
+        }
+
+        if let Some(flag) = &filter.content_is_executable {
+            tags.push(self.filter_tag(
+                "Executable",
+                &format!("{}", flag.value().unwrap_or(false)),
+                FilterField::IsExecutable,
+            ));
+        }
+
+        if let (Some(cmp), Some(rhs)) = (&filter.content_size_cmp, &filter.content_size_rhs) {
+            tags.push(self.filter_tag(
+                "Content Size",
+                &format!("{} {}", cmp, rhs.value().unwrap_or(0)),
+                FilterField::ContentSize,
+            ));
+        }
+
+        html! {
+            <div class="field is-grouped is-grouped-multiline">
+                { for tags.into_iter() }
+            </div>
+        }
+    }
+
+    fn filter_bool_editor(&self, field: &str, adder_field: FilterField) -> Html<Self> {
+        html! {
+            <>
+                {field}<br/>
+                <a class="button is-rounded is-small is-success is-outlined"
+                    onclick=|_|Msg::FilterUpdate(adder_field, FilterChange::Bool(true))>{"true"}</a>
+                <a class="button is-rounded is-small is-danger is-outlined"
+                    onclick=|_|Msg::FilterUpdate(adder_field, FilterChange::Bool(false))>{"false"}</a>
+            </>
+        }
+    }
+
+    fn filter_editor(&self) -> Html<Self> {
+        let mut items = Vec::new();
+        items.push(self.filter_bool_editor("Content Type: Data", FilterField::IsData));
+        items.push(self.filter_bool_editor("Content Type: Executable", FilterField::IsExecutable));
+        html! {
+            <div class="dropdown is-hoverable">
+                <div class="dropdown-trigger">
+                    <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
+                    <span>{"Add filters..."}</span>
+                    <span class="icon is-small">
+                        <i class="fas fa-angle-down" aria-hidden="true"></i>
+                    </span>
+                    </button>
+                </div>
+                <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                    <div class="dropdown-content">
+                        { for items.into_iter().map(|x|{
+                            html!{
+                                <>
+                                    <div class="dropdown-item">
+                                        {x}
+                                    </div>
+
+                                    <hr class="dropdown-divider"/>
+                                </>
+                            }
+                        }) }
+                    </div>
+                </div>
+            </div>
+        }
+    }
 }
 
 impl Renderable<PageNcchList> for PageNcchList {
@@ -286,6 +454,18 @@ impl Renderable<PageNcchList> for PageNcchList {
                                     <button class="button" onclick=|_|Msg::Search>{"Search"}</button>
                                 </p>
                             </div>
+                        </div>
+                    </div>
+                </nav>
+                <nav class="level">
+                    <div class="level-left">
+                        <div class="level-item">
+                            {self.filter_tags()}
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="level-item">
+                            {self.filter_editor()}
                         </div>
                     </div>
                 </nav>
