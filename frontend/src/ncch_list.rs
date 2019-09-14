@@ -35,6 +35,13 @@ pub enum FilterField {
     IsData,
     IsExecutable,
     ContentSize,
+    FixedKey,
+    NoRomfs,
+    NoCrypto,
+    SeedCrypto,
+    SdApp,
+    EnableL2Cache,
+    HighCpuSpeed,
 }
 
 #[derive(Clone)]
@@ -228,6 +235,45 @@ impl PageNcchList {
                 }
                 _ => (),
             },
+            FilterField::FixedKey => match change {
+                FilterChange::Delete => filter.fixed_key = None,
+                FilterChange::Bool(value) => filter.fixed_key = Some(StringWrapper::new(*value)),
+                _ => (),
+            },
+            FilterField::NoRomfs => match change {
+                FilterChange::Delete => filter.no_romfs = None,
+                FilterChange::Bool(value) => filter.no_romfs = Some(StringWrapper::new(*value)),
+                _ => (),
+            },
+            FilterField::NoCrypto => match change {
+                FilterChange::Delete => filter.no_crypto = None,
+                FilterChange::Bool(value) => filter.no_crypto = Some(StringWrapper::new(*value)),
+                _ => (),
+            },
+            FilterField::SeedCrypto => match change {
+                FilterChange::Delete => filter.seed_crypto = None,
+                FilterChange::Bool(value) => filter.seed_crypto = Some(StringWrapper::new(*value)),
+                _ => (),
+            },
+            FilterField::SdApp => match change {
+                FilterChange::Delete => filter.sd_app = None,
+                FilterChange::Bool(value) => filter.sd_app = Some(StringWrapper::new(*value)),
+                _ => (),
+            },
+            FilterField::EnableL2Cache => match change {
+                FilterChange::Delete => filter.enable_l2_cache = None,
+                FilterChange::Bool(value) => {
+                    filter.enable_l2_cache = Some(StringWrapper::new(*value))
+                }
+                _ => (),
+            },
+            FilterField::HighCpuSpeed => match change {
+                FilterChange::Delete => filter.high_cpu_speed = None,
+                FilterChange::Bool(value) => {
+                    filter.high_cpu_speed = Some(StringWrapper::new(*value))
+                }
+                _ => (),
+            },
         }
     }
 
@@ -328,9 +374,6 @@ impl PageNcchList {
         let filter = &self.filter_param;
         let mut tags = Vec::new();
 
-        // partition id
-        // program id
-
         if let Some(code) = &filter.product_code {
             tags.push(self.filter_tag("Product Code", &code, FilterField::ProductCode));
         }
@@ -338,8 +381,6 @@ impl PageNcchList {
         if let Some(code) = &filter.maker_code {
             tags.push(self.filter_tag("Makder Code", &code, FilterField::MakerCode));
         }
-
-        // content type
 
         if let Some(flag) = &filter.content_is_data {
             tags.push(self.filter_tag(
@@ -357,11 +398,67 @@ impl PageNcchList {
             ));
         }
 
+        if let Some(flag) = &filter.no_romfs {
+            tags.push(self.filter_tag(
+                "No RomFS",
+                &format!("{}", flag.value().unwrap_or(false)),
+                FilterField::NoRomfs,
+            ));
+        }
+
         if let (Some(cmp), Some(rhs)) = (&filter.content_size_cmp, &filter.content_size_rhs) {
             tags.push(self.filter_tag(
                 "Content Size",
                 &format!("{} {}", cmp, rhs.value().unwrap_or(0)),
                 FilterField::ContentSize,
+            ));
+        }
+
+        if let Some(flag) = &filter.no_crypto {
+            tags.push(self.filter_tag(
+                "Crypto: plain",
+                &format!("{}", flag.value().unwrap_or(false)),
+                FilterField::NoCrypto,
+            ));
+        }
+
+        if let Some(flag) = &filter.fixed_key {
+            tags.push(self.filter_tag(
+                "Crypto: zero",
+                &format!("{}", flag.value().unwrap_or(false)),
+                FilterField::FixedKey,
+            ));
+        }
+
+        if let Some(flag) = &filter.seed_crypto {
+            tags.push(self.filter_tag(
+                "Crypto: seed",
+                &format!("{}", flag.value().unwrap_or(false)),
+                FilterField::SeedCrypto,
+            ));
+        }
+
+        if let Some(flag) = &filter.sd_app {
+            tags.push(self.filter_tag(
+                "SD App",
+                &format!("{}", flag.value().unwrap_or(false)),
+                FilterField::SdApp,
+            ));
+        }
+
+        if let Some(flag) = &filter.enable_l2_cache {
+            tags.push(self.filter_tag(
+                "L2 cache",
+                &format!("{}", flag.value().unwrap_or(false)),
+                FilterField::EnableL2Cache,
+            ));
+        }
+
+        if let Some(flag) = &filter.high_cpu_speed {
+            tags.push(self.filter_tag(
+                "High CPU speed",
+                &format!("{}", flag.value().unwrap_or(false)),
+                FilterField::HighCpuSpeed,
             ));
         }
 
@@ -375,45 +472,78 @@ impl PageNcchList {
     fn filter_bool_editor(&self, field: &str, adder_field: FilterField) -> Html<Self> {
         html! {
             <>
-                {field}<br/>
                 <a class="button is-rounded is-small is-success is-outlined"
-                    onclick=|_|Msg::FilterUpdate(adder_field, FilterChange::Bool(true))>{"true"}</a>
+                    onclick=|_|Msg::FilterUpdate(adder_field, FilterChange::Bool(true))>{field}</a>
                 <a class="button is-rounded is-small is-danger is-outlined"
-                    onclick=|_|Msg::FilterUpdate(adder_field, FilterChange::Bool(false))>{"false"}</a>
+                    onclick=|_|Msg::FilterUpdate(adder_field, FilterChange::Bool(false))><s>{field}</s></a>
             </>
         }
     }
 
     fn filter_editor(&self) -> Html<Self> {
-        let mut items = Vec::new();
-        items.push(self.filter_bool_editor("Content Type: Data", FilterField::IsData));
-        items.push(self.filter_bool_editor("Content Type: Executable", FilterField::IsExecutable));
         html! {
-            <div class="dropdown is-hoverable">
-                <div class="dropdown-trigger">
-                    <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
-                    <span>{"Add filters..."}</span>
-                    <span class="icon is-small">
-                        <i class="fas fa-angle-down" aria-hidden="true"></i>
-                    </span>
-                    </button>
+            <>
+                <div class="level-item">
+                    {"Add filters:"}
                 </div>
-                <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                    <div class="dropdown-content">
-                        { for items.into_iter().map(|x|{
-                            html!{
-                                <>
-                                    <div class="dropdown-item">
-                                        {x}
-                                    </div>
 
-                                    <hr class="dropdown-divider"/>
-                                </>
-                            }
-                        }) }
+                <div class="level-item dropdown is-hoverable">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
+                            <span>{"Partition information"}</span>
+                            <span class="icon is-small">
+                                <i class="fas fa-angle-down" aria-hidden="true"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                        <div class="dropdown-content">
+                            <div class="dropdown-item">
+                                {self.filter_bool_editor("Data", FilterField::IsData)}
+                            </div>
+                            <div class="dropdown-item">
+                                {self.filter_bool_editor("Executable", FilterField::IsExecutable)}
+                            </div>
+                            <div class="dropdown-item">
+                                {self.filter_bool_editor("No RomFS", FilterField::NoRomfs)}
+                            </div>
+                            <div class="dropdown-item">
+                                {self.filter_bool_editor("Crypto: plain", FilterField::NoCrypto)}
+                            </div>
+                            <div class="dropdown-item">
+                                {self.filter_bool_editor("Crypto: zero", FilterField::FixedKey)}
+                            </div>
+                            <div class="dropdown-item">
+                                {self.filter_bool_editor("Crypto: seed", FilterField::SeedCrypto)}
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+
+                <div class="level-item dropdown is-hoverable">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
+                            <span>{"System & Access Control"}</span>
+                            <span class="icon is-small">
+                                <i class="fas fa-angle-down" aria-hidden="true"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                        <div class="dropdown-content">
+                            <div class="dropdown-item">
+                                {self.filter_bool_editor("SD App", FilterField::SdApp)}
+                            </div>
+                            <div class="dropdown-item">
+                                {self.filter_bool_editor("L2 cache", FilterField::EnableL2Cache)}
+                            </div>
+                            <div class="dropdown-item">
+                                {self.filter_bool_editor("High CPU speed", FilterField::HighCpuSpeed)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </>
         }
     }
 }
@@ -464,9 +594,7 @@ impl Renderable<PageNcchList> for PageNcchList {
                         </div>
                     </div>
                     <div class="level-right">
-                        <div class="level-item">
-                            {self.filter_editor()}
-                        </div>
+                        {self.filter_editor()}
                     </div>
                 </nav>
                 {

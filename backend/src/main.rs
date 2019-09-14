@@ -720,7 +720,7 @@ fn main() -> std::io::Result<()> {
 
         let database = database_root.clone();
         let query_ncch_count = move |param: web::Query<NcchFilterParam>| {
-            info!("NCCH query count called: {:?}", param);
+            info!("NCCH query count called");
             let connection = match database.get_connection() {
                 Ok(connection) => connection,
                 Err(e) => {
