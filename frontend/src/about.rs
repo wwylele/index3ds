@@ -62,7 +62,7 @@ impl Renderable<PageAbout> for PageAbout {
         <div class = "content">
         <h2>{"What?"}</h2>
         <p>{"Index3DS is a database for 3DS games, or more accurately,
-for all official 3DS packaged in the NCCH format. Everyone can add missing entries by
+for all official content packaged in the NCCH format. Everyone can add missing entries by
 uploading (only a small part of) the game files they dumped."}</p>
         <h2>{"Why?"}</h2>
         <p>{"There are already some 3DS game databases.
