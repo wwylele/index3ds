@@ -49,13 +49,10 @@ impl Renderable<PageAbout> for PageAbout {
             <div class="hero-body">
                 <div class="container">
                 <h1 class="title">
-                    {"Index3ds"}
+                    {"Index3DS"}
                 </h1>
                 <h3 class="subtitle">
-                    <span class="icon">
-                        <i class="fas fa-code-branch"></i>
-                    </span>
-                    {self.git_revision.as_ref().map(|x|x.as_str()).unwrap_or("...")}
+                    {"3DS game database"}
                 </h3>
                 </div>
             </div>
@@ -64,7 +61,7 @@ impl Renderable<PageAbout> for PageAbout {
         <section class="section">
         <div class = "content">
         <h2>{"What?"}</h2>
-        <p>{"Index3ds is a database for 3DS games, or more accurately,
+        <p>{"Index3DS is a database for 3DS games, or more accurately,
 for all official 3DS packaged in the NCCH format. Everyone can add missing entries by
 uploading (only a small part of) the game files they dumped."}</p>
         <h2>{"Why?"}</h2>
@@ -78,12 +75,12 @@ uploading (only a small part of) the game files they dumped."}</p>
         </ul></p>
         <h2>{"How?"}</h2>
         <p>{"Instead of relying on information from those 'piracy releasing groups',
-this database is build by everyone. Index3ds encourages everyone to dump games that they own legitimately,
+this database is build by everyone. Index3DS encourages everyone to dump games that they own legitimately,
 and upload them. The server checks the signature built in the game to make sure it is intact official content,
 then parses and records the game information, including ID and titles etc., to avoid human error.
 "}</p>
         <h4>{"Uploading games? This website supports piracy?"}</h4>
-        <p>{"No, index3ds doesn't support piracy. Only the necessary portion of the game
+        <p>{"No, index3DS doesn't support piracy. Only the necessary portion of the game
 file is transferred through the internet and stored in the database. This portion only includes everything that
 is shown in the game information page (or that will be shown soon, as some stuff is unimplemented right now), and
 doesn't include the actual game playable content at all. I can't get your full game copy when you upload it,
@@ -109,15 +106,19 @@ but the database is still fine as the stored information is verified."}</p>
         The goal of this database is to store information of all officially signed NCCH contents that ever existed."}</p>
 
         <p>{"You can also contribute by maintaining and improving the website itself.
-        Index3ds is open-sourced and is hosted on Github and code contribution is welcome!"}<br/>
+        Index3DS is open-sourced and is hosted on Github and code contribution is welcome!"}<br/>
         <a class="button is-primary" href="https://github.com/wwylele/index3ds">
             <span class="icon">
             <i class="fab fa-github"></i>
             </span>
-            <span>{"Visit index3ds on Github"}</span>
+            <span>{"Visit index3DS on Github"}</span>
         </a>
+        <span class="icon">
+            <i class="fas fa-code-branch"></i>
+        </span>
+        {self.git_revision.as_ref().map(|x|&x[0..std::cmp::min(x.len(), 7)]).unwrap_or("...")}
         </p>
-        <p>{"If you encountered any problem when using index3ds,
+        <p>{"If you encountered any problem when using index3DS,
             please report as an issue to the Github repository. Problems include but not are limited to"}
             <ul>
             <li>{"the server is down,"}</li>
