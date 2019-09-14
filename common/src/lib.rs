@@ -310,4 +310,8 @@ pub mod url {
         "/notfound48.png"
     }
 
+    pub fn about() -> &'static str {
+        "/about"
+    }
+
 }

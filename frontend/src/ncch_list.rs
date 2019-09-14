@@ -123,7 +123,7 @@ impl Component for PageNcchList {
     type Message = Msg;
     type Properties = PageNcchListProp;
 
-    fn create(props: Self::Properties, mut link: ComponentLink<Self>) -> Self {
+    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         let search_string = props
             .filter
             .keyword

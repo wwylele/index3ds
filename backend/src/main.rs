@@ -755,6 +755,7 @@ fn main() -> std::io::Result<()> {
             .route(url::ncch(), index())
             .route(url::submit_ncch(), index())
             .route(url::ncch_list(), index())
+            .route(url::about(), index())
             .service(actix_files::Files::new("/", &*STATIC_ROOT))
     });
 
